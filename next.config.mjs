@@ -29,7 +29,7 @@ const nextConfig = {
   },
   devIndicators: false,
   output: 'export',
-  distDir: 'next',
+  distDir: 'dist',
 }
 
 if (userConfig) {
