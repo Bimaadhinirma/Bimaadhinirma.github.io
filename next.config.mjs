@@ -28,6 +28,8 @@ const nextConfig = {
     parallelServerCompiles: true,
   },
   devIndicators: false,
+  output: 'export',
+  distDir: 'next',
 }
 
 if (userConfig) {
