@@ -61,7 +61,7 @@ export default function Portfolio() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100
+      const scrollPosition = window.scrollY + 50
 
       if (homeRef.current && scrollPosition < homeRef.current.offsetTop + homeRef.current.offsetHeight) {
         setActiveSection("home")
@@ -98,12 +98,91 @@ export default function Portfolio() {
 
   const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
       if (ref.current) {
-        window.scrollTo({
-          top: ref.current.offsetTop - 80,
+        ref.current.scrollIntoView({
           behavior: isPrefersReducedMotion ? "auto" : "smooth",
+          block: "start",
+          inline: "nearest"
         })
       }
     }
+
+  // Scroll wheel handler for section-by-section scrolling
+  useEffect(() => {
+    let isScrolling = false
+    const sections = [homeRef, educationRef, projectsRef, skillsRef]
+    
+    const handleWheel = (e: WheelEvent) => {
+      if (isScrolling || isPrefersReducedMotion) return
+      
+      e.preventDefault()
+      isScrolling = true
+      
+      const currentSectionIndex = sections.findIndex(ref => {
+        if (!ref.current) return false
+        const rect = ref.current.getBoundingClientRect()
+        return rect.top <= 50 && rect.bottom > 50
+      })
+      
+      if (currentSectionIndex !== -1) {
+        const direction = e.deltaY > 0 ? 1 : -1
+        const nextIndex = currentSectionIndex + direction
+        
+        if (nextIndex >= 0 && nextIndex < sections.length) {
+          scrollToSection(sections[nextIndex])
+        }
+      }
+      
+      setTimeout(() => {
+        isScrolling = false
+      }, 1000)
+    }
+    
+    // Only enable section scrolling on desktop
+    if (window.innerWidth >= 768) {
+      window.addEventListener('wheel', handleWheel, { passive: false })
+      return () => window.removeEventListener('wheel', handleWheel)
+    }
+  }, [isPrefersReducedMotion])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const sections = [homeRef, educationRef, projectsRef, skillsRef]
+      
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault()
+        const currentIndex = sections.findIndex(ref => {
+          if (!ref.current) return false
+          const rect = ref.current.getBoundingClientRect()
+          return rect.top <= 50 && rect.bottom > 50
+        })
+        
+        if (currentIndex !== -1 && currentIndex < sections.length - 1) {
+          scrollToSection(sections[currentIndex + 1])
+        }
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault()
+        const currentIndex = sections.findIndex(ref => {
+          if (!ref.current) return false
+          const rect = ref.current.getBoundingClientRect()
+          return rect.top <= 50 && rect.bottom > 50
+        })
+        
+        if (currentIndex > 0) {
+          scrollToSection(sections[currentIndex - 1])
+        }
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        scrollToSection(homeRef)
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        scrollToSection(skillsRef)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   
 
@@ -536,7 +615,10 @@ export default function Portfolio() {
 
   return (
     <div
-    className={`min-h-screen bg-gradient-to-b from-black to-gray-900 text-white ${isMounted && !isPrefersReducedMotion && window.innerWidth >= 768 ? "cursor-none" : ""}`}
+    className={`min-h-screen bg-gradient-to-b from-black to-gray-900 text-white scroll-smooth ${isMounted && !isPrefersReducedMotion && window.innerWidth >= 768 ? "cursor-none" : ""}`}
+    style={{
+      scrollBehavior: isPrefersReducedMotion ? 'auto' : 'smooth'
+    }}
     >
       {/* Custom Cursor - Only on desktop and when not preferring reduced motion */}
       {isMounted && !isPrefersReducedMotion && window.innerWidth >= 768 && (
@@ -546,6 +628,43 @@ export default function Portfolio() {
           animate={cursorVariant}
         />
       )}
+
+      {/* Scroll Progress Indicator */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 to-purple-500 z-50"
+        style={{ scaleX: scrollYProgress, transformOrigin: "0%" }}
+      />
+
+      {/* Section Navigation Indicator */}
+      <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
+        <div className="flex flex-col space-y-3">
+          {[
+            { id: "home", label: "Home", ref: homeRef },
+            { id: "education", label: "Education", ref: educationRef },
+            { id: "projects", label: "Projects", ref: projectsRef },
+            { id: "skills", label: "Skills", ref: skillsRef },
+          ].map((item, index) => (
+            <motion.button
+              key={item.id}
+              onClick={() => scrollToSection(item.ref)}
+              onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+              onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+              className={`group relative w-3 h-3 rounded-full transition-all duration-300 ${
+                activeSection === item.id 
+                  ? "bg-cyan-400 scale-125" 
+                  : "bg-gray-600 hover:bg-gray-400"
+              }`}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <span className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                {item.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
 
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-black/50 border-b border-gray-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -774,14 +893,14 @@ export default function Portfolio() {
         </section>
 
         {/* Education Section */}
-        <section ref={educationRef} className="py-20 bg-black/50 relative">
-          <div className="container mx-auto px-4">
+        <section ref={educationRef} className="min-h-screen py-4 md:py-6 bg-black/50 relative flex items-center justify-center">
+          <div className="container mx-auto px-4 w-full max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-8"
             >
               <h2 className="text-3xl md:text-4xl font-bold mb-4 relative inline-block">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
@@ -831,7 +950,7 @@ export default function Portfolio() {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="mb-12 relative pl-8 border-l border-gray-800 group"
+                  className="mb-8 relative pl-8 border-l border-gray-800 group"
                   onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
                   onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
                 >
@@ -847,14 +966,14 @@ export default function Portfolio() {
         </section>
 
         {/* Projects Section */}
-        <section ref={projectsRef} className="py-20 bg-gradient-to-b from-black/50 to-gray-900/50 relative">
-          <div className="container mx-auto px-4">
+        <section ref={projectsRef} className="min-h-screen py-6 md:py-8 bg-gradient-to-b from-black/50 to-gray-900/50 relative flex items-center justify-center">
+          <div className="container mx-auto px-4 w-full max-w-7xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-8"
             >
               <h2 className="text-3xl md:text-4xl font-bold mb-4 relative inline-block">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
@@ -960,14 +1079,14 @@ export default function Portfolio() {
         </section>
 
         {/* Skills Section */}
-        <section ref={skillsRef} className="py-20 bg-black/50 relative">
-          <div className="container mx-auto px-4">
+        <section ref={skillsRef} className="min-h-screen py-6 md:py-8 bg-black/50 relative flex items-center justify-center">
+          <div className="container mx-auto px-4 w-full max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="text-center mb-16"
+              className="text-center mb-8"
             >
               <h2 className="text-3xl md:text-4xl font-bold mb-4 relative inline-block">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
@@ -981,7 +1100,7 @@ export default function Portfolio() {
             </motion.div>
 
             <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-8">
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -1294,6 +1413,35 @@ export default function Portfolio() {
         .cursor-none button, 
         .cursor-none a {
           cursor: none !important;
+        }
+
+        /* Smooth section scrolling */
+        section {
+          scroll-margin-top: 80px;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #06b6d4, #8b5cf6);
+          border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #0891b2, #7c3aed);
+        }
+
+        /* Smooth focus transitions */
+        *:focus {
+          outline: 2px solid #06b6d4;
+          outline-offset: 2px;
         }
       `}</style>
     </div>
