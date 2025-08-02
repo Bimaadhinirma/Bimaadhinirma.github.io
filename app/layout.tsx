@@ -10,7 +10,7 @@ export const metadata = {
   title: "Bima Adhienirma - Portfolio",
   description: "Personal portfolio Website of Bima Adhienirma",
   icons: {
-    icon: '/logo.png',
+    icon: '/bima-nobg.png',
   }
 }
 

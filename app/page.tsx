@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { motion, useScroll, useTransform } from "framer-motion"
 import {
   ArrowDown,
@@ -28,7 +28,7 @@ import {
   FileText,
 } from "lucide-react"
 import Link from "next/link"
-
+import type { Variants } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -105,7 +105,9 @@ export default function Portfolio() {
       }
     }
 
-  const cursorVariants = {
+  
+
+  const cursorVariants: Variants = {
     default: {
       x: mousePosition.x - 16,
       y: mousePosition.y - 16,
@@ -114,8 +116,8 @@ export default function Portfolio() {
       backgroundColor: "rgba(6, 182, 212, 0.1)",
       border: "1px solid rgba(6, 182, 212, 0.3)",
       transition: {
-        type: "tween",
-        ease: "linear",
+        type: "tween" as const,
+        ease: "linear" as const,
         duration: 0.1,
       },
     },
@@ -127,8 +129,8 @@ export default function Portfolio() {
       backgroundColor: "rgba(6, 182, 212, 0.2)",
       border: "1px solid rgba(6, 182, 212, 0.5)",
       transition: {
-        type: "tween",
-        ease: "linear",
+        type: "tween" as const,
+        ease: "linear" as const,
         duration: 0.1,
       },
     },
@@ -152,47 +154,385 @@ export default function Portfolio() {
     </div>
   )
 
-  // Optimized floating particles component - fully CSS-based
-  const OptimizedParticles = () => {
-    // Pre-calculate particle positions to avoid re-renders
-    const particles = Array.from({ length: 12 }).map((_, i) => {
-      const size = Math.floor(Math.random() * 6) + 4 // Larger particles
-      const duration = Math.random() * 15 + 20
-      const startX = Math.random() * 100
-      const startY = Math.random() * 100
-      const delay = Math.random() * 5
+  // Starfield particle system - memoized to prevent re-renders
+  const StarfieldParticles = useMemo(() => {
+    // Generate static particle data
+    const generateParticles = () => {
+      const starTypes = [
+        { 
+          type: 'small',
+          count: 150,
+          sizeRange: [1, 2],
+          colors: ['white', 'cyan-100', 'blue-100', 'purple-100'],
+          twinkleSpeed: [3, 6]
+        },
+        { 
+          type: 'medium',
+          count: 60,
+          sizeRange: [2, 3],
+          colors: ['white', 'cyan-200', 'blue-200', 'purple-200'],
+          twinkleSpeed: [2, 4]
+        },
+        { 
+          type: 'large',
+          count: 25,
+          sizeRange: [3, 4],
+          colors: ['white', 'cyan-300', 'blue-300', 'purple-300'],
+          twinkleSpeed: [1, 3]
+        },
+        { 
+          type: 'bright',
+          count: 15,
+          sizeRange: [4, 6],
+          colors: ['white', 'cyan-400', 'blue-400'],
+          twinkleSpeed: [0.5, 2]
+        }
+      ]
 
-      return {
-        id: i,
-        size,
-        duration,
-        startX,
-        startY,
-        delay,
-        opacity: 0.4 + Math.random() * 0.3, // Higher opacity
-      }
-    })
+      return starTypes.flatMap((starType, typeIndex) => 
+        Array.from({ length: starType.count }).map((_, i) => {
+          const size = Math.floor(Math.random() * (starType.sizeRange[1] - starType.sizeRange[0] + 1)) + starType.sizeRange[0]
+          const x = Math.random() * 100
+          const y = Math.random() * 100
+          const color = starType.colors[Math.floor(Math.random() * starType.colors.length)]
+          const twinkleSpeed = Math.random() * (starType.twinkleSpeed[1] - starType.twinkleSpeed[0]) + starType.twinkleSpeed[0]
+          const delay = Math.random() * 5
+          const opacity = 0.3 + Math.random() * 0.7
+
+          return {
+            id: `${typeIndex}-${i}`,
+            type: starType.type,
+            size,
+            x,
+            y,
+            color,
+            twinkleSpeed,
+            delay,
+            opacity,
+          }
+        })
+      )
+    }
+
+    const generateConstellations = () => 
+      Array.from({ length: 8 }).map((_, i) => {
+        const x1 = Math.random() * 100
+        const y1 = Math.random() * 100
+        const x2 = x1 + (Math.random() - 0.5) * 20
+        const y2 = y1 + (Math.random() - 0.5) * 20
+        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI
+        const duration = 5 + Math.random() * 5
+        const delay = Math.random() * 3
+
+        return {
+          id: `constellation-${i}`,
+          x1,
+          y1,
+          length,
+          angle,
+          duration,
+          delay
+        }
+      })
+
+    const generateShootingStars = () =>
+      Array.from({ length: 4 }).map((_, i) => ({
+        id: `shooting-star-${i}`,
+        top: Math.random() * 30,
+        left: Math.random() * 100,
+        duration: 6 + Math.random() * 4,
+        delay: Math.random() * 15
+      }))
+
+    const generateNebulaClouds = () =>
+      Array.from({ length: 3 }).map((_, i) => ({
+        id: `nebula-${i}`,
+        width: 150 + Math.random() * 200,
+        height: 100 + Math.random() * 150,
+        top: Math.random() * 100,
+        left: Math.random() * 100,
+        isBlue: i % 2 === 0,
+        duration: 20 + Math.random() * 10,
+        delay: Math.random() * 5
+      }))
+
+    const generateGalaxies = () =>
+      Array.from({ length: 2 }).map((_, i) => ({
+      id: `galaxy-${i}`,
+      size: 120 + Math.random() * 80,
+      top: Math.random() * 80 + 10,
+      left: Math.random() * 80 + 10,
+      rotation: Math.random() * 360,
+      rotationSpeed: 80 + Math.random() * 40, // slowed down (was 40 + Math.random() * 20)
+      delay: Math.random() * 10,
+      isClockwise: i % 2 === 0
+      }))
+
+    const particles = generateParticles()
+    const constellations = generateConstellations()
+    const shootingStars = generateShootingStars()
+    const nebulaClouds = generateNebulaClouds()
+    const galaxies = generateGalaxies()
 
     return (
       <div className="absolute inset-0 z-10 overflow-hidden pointer-events-none">
-        {particles.map((particle) => (
+        {/* Background stars */}
+        {particles.map((star) => (
           <div
-            key={particle.id}
-            className="absolute rounded-full bg-cyan-400/30 will-change-transform"
+            key={star.id}
+            className={`absolute rounded-full bg-${star.color}`}
             style={{
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              top: `${particle.startY}%`,
-              left: `${particle.startX}%`,
-              opacity: particle.opacity,
-              animation: `staticFloat ${particle.duration}s infinite`,
-              animationDelay: `${particle.delay}s`,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              top: `${star.y}%`,
+              left: `${star.x}%`,
+              opacity: star.opacity,
+              animation: `starTwinkle ${star.twinkleSpeed}s infinite ease-in-out alternate`,
+              animationDelay: `${star.delay}s`,
+              boxShadow: star.type === 'bright' ? `0 0 ${star.size * 3}px rgba(255, 255, 255, 0.5)` :
+                         star.type === 'large' ? `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.3)` :
+                         `0 0 ${star.size}px rgba(255, 255, 255, 0.2)`,
             }}
           />
         ))}
+
+        {/* Constellation lines */}
+        {constellations.map((constellation) => (
+          <div
+            key={constellation.id}
+            className="absolute bg-white/10"
+            style={{
+              width: `${constellation.length}%`,
+              height: '1px',
+              top: `${constellation.y1}%`,
+              left: `${constellation.x1}%`,
+              transform: `rotate(${constellation.angle}deg)`,
+              transformOrigin: '0 0',
+              animation: `constellationPulse ${constellation.duration}s infinite ease-in-out`,
+              animationDelay: `${constellation.delay}s`,
+            }}
+          />
+        ))}
+
+        {/* Shooting stars */}
+        {shootingStars.map((star) => (
+          <div
+            key={star.id}
+            className="absolute"
+            style={{
+              top: `${star.top}%`,
+              left: `${star.left}%`,
+              animation: `shootingStar ${star.duration}s infinite linear`,
+              animationDelay: `${star.delay}s`,
+            }}
+          >
+            <div className="w-3 h-0.5 bg-gradient-to-l from-white to-transparent rounded-full opacity-90" />
+            <div className="w-12 h-0.5 bg-gradient-to-l from-cyan-400/60 to-transparent rounded-full absolute top-0 left-0" />
+            <div className="w-20 h-0.5 bg-gradient-to-l from-cyan-200/30 to-transparent rounded-full absolute top-0 left-0" />
+          </div>
+        ))}
+
+        {/* Nebula clouds */}
+        {nebulaClouds.map((nebula) => (
+          <div
+            key={nebula.id}
+            className="absolute rounded-full opacity-5 pointer-events-none"
+            style={{
+              width: `${nebula.width}px`,
+              height: `${nebula.height}px`,
+              top: `${nebula.top}%`,
+              left: `${nebula.left}%`,
+              background: nebula.isBlue ? 
+                'radial-gradient(ellipse, rgba(6, 182, 212, 0.3) 0%, rgba(6, 182, 212, 0.1) 50%, transparent 100%)' :
+                'radial-gradient(ellipse, rgba(147, 51, 234, 0.3) 0%, rgba(147, 51, 234, 0.1) 50%, transparent 100%)',
+              animation: `nebulaDrift ${nebula.duration}s infinite ease-in-out alternate`,
+              animationDelay: `${nebula.delay}s`,
+            }}
+          />
+        ))}
+
+        {/* Spiral Galaxies */}
+        {galaxies.map((galaxy) => (
+          <div
+            key={galaxy.id}
+            className="absolute pointer-events-none"
+            style={{
+              width: `${galaxy.size}px`,
+              height: `${galaxy.size}px`,
+              top: `${galaxy.top}%`,
+              left: `${galaxy.left}%`,
+              transform: `translate(-50%, -50%)`,
+              animation: `galaxyRotate ${galaxy.rotationSpeed}s infinite linear ${galaxy.isClockwise ? '' : 'reverse'}`,
+              animationDelay: `${galaxy.delay}s`,
+            }}
+          >
+            {/* Galaxy base disk - subtle background */}
+            <div 
+              className="absolute inset-0 rounded-full opacity-10"
+              style={{
+                background: 'radial-gradient(ellipse 70% 20% at center, rgba(255, 255, 255, 0.05) 0%, rgba(6, 182, 212, 0.03) 30%, transparent 60%)',
+              }}
+            />
+            
+            {/* Central bulge - bright galactic center */}
+            <div 
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+              style={{
+                width: `${galaxy.size * 0.25}px`,
+                height: `${galaxy.size * 0.15}px`,
+                background: 'radial-gradient(ellipse, rgba(255, 255, 255, 0.4) 0%, rgba(255, 240, 200, 0.3) 30%, rgba(255, 200, 100, 0.2) 60%, rgba(255, 150, 50, 0.1) 80%, transparent 100%)',
+                borderRadius: '50%',
+                boxShadow: `0 0 ${galaxy.size * 0.15}px rgba(255, 255, 255, 0.3), 0 0 ${galaxy.size * 0.3}px rgba(255, 200, 100, 0.15)`,
+              }}
+            />
+            
+            {/* Spiral Arms - using SVG-like paths with CSS */}
+            <div className="absolute inset-0" style={{ transform: 'rotate(0deg)' }}>
+              {/* First major spiral arm */}
+              <div 
+                className="absolute opacity-35"
+                style={{
+                  width: `${galaxy.size}px`,
+                  height: `${galaxy.size}px`,
+                  background: `conic-gradient(from 30deg at center,
+                    transparent 0deg,
+                    rgba(255, 255, 255, 0.08) 15deg,
+                    rgba(6, 182, 212, 0.12) 30deg,
+                    rgba(255, 255, 255, 0.1) 45deg,
+                    rgba(147, 51, 234, 0.08) 60deg,
+                    rgba(255, 255, 255, 0.05) 75deg,
+                    transparent 90deg,
+                    transparent 270deg,
+                    rgba(255, 255, 255, 0.04) 285deg,
+                    rgba(6, 182, 212, 0.08) 300deg,
+                    rgba(255, 255, 255, 0.06) 315deg,
+                    rgba(147, 51, 234, 0.05) 330deg,
+                    rgba(255, 255, 255, 0.03) 345deg,
+                    transparent 360deg)`,
+                  borderRadius: '50%',
+                  maskImage: 'radial-gradient(ellipse 90% 90% at center, black 20%, transparent 70%)',
+                  WebkitMaskImage: 'radial-gradient(ellipse 90% 90% at center, black 20%, transparent 70%)',
+                }}
+              />
+              
+              {/* Second major spiral arm - offset by 180 degrees */}
+              <div 
+                className="absolute opacity-30"
+                style={{
+                  width: `${galaxy.size}px`,
+                  height: `${galaxy.size}px`,
+                  background: `conic-gradient(from 210deg at center,
+                    transparent 0deg,
+                    rgba(255, 255, 255, 0.06) 15deg,
+                    rgba(6, 182, 212, 0.1) 30deg,
+                    rgba(255, 255, 255, 0.08) 45deg,
+                    rgba(147, 51, 234, 0.06) 60deg,
+                    rgba(255, 255, 255, 0.04) 75deg,
+                    transparent 90deg,
+                    transparent 270deg,
+                    rgba(255, 255, 255, 0.03) 285deg,
+                    rgba(6, 182, 212, 0.06) 300deg,
+                    rgba(255, 255, 255, 0.05) 315deg,
+                    rgba(147, 51, 234, 0.04) 330deg,
+                    rgba(255, 255, 255, 0.02) 345deg,
+                    transparent 360deg)`,
+                  borderRadius: '50%',
+                  maskImage: 'radial-gradient(ellipse 90% 90% at center, black 20%, transparent 70%)',
+                  WebkitMaskImage: 'radial-gradient(ellipse 90% 90% at center, black 20%, transparent 70%)',
+                }}
+              />
+              
+              {/* Minor spiral arms for detail */}
+              <div 
+                className="absolute opacity-20"
+                style={{
+                  width: `${galaxy.size * 0.7}px`,
+                  height: `${galaxy.size * 0.7}px`,
+                  top: '15%',
+                  left: '15%',
+                  background: `conic-gradient(from 60deg at center,
+                    transparent 0deg,
+                    rgba(255, 255, 255, 0.04) 20deg,
+                    rgba(6, 182, 212, 0.06) 40deg,
+                    rgba(255, 255, 255, 0.03) 60deg,
+                    transparent 80deg,
+                    transparent 260deg,
+                    rgba(255, 255, 255, 0.02) 280deg,
+                    rgba(6, 182, 212, 0.04) 300deg,
+                    rgba(255, 255, 255, 0.015) 320deg,
+                    transparent 340deg)`,
+                  borderRadius: '50%',
+                }}
+              />
+            </div>
+            
+            {/* Star-forming regions - bright spots along arms */}
+            <div className="absolute inset-0">
+              {Array.from({ length: 8 }).map((_, i) => {
+                const angle = (i * 45) + (galaxy.id === 'galaxy-0' ? 0 : 90)
+                const distance = 0.3 + (i % 3) * 0.15
+                const x = 50 + Math.cos(angle * Math.PI / 180) * distance * 40
+                const y = 50 + Math.sin(angle * Math.PI / 180) * distance * 40
+                const size = 2 + Math.random() * 3
+                
+                return (
+                  <div
+                    key={i}
+                    className="absolute rounded-full opacity-40"
+                    style={{
+                      width: `${size}px`,
+                      height: `${size}px`,
+                      left: `${x}%`,
+                      top: `${y}%`,
+                      background: i % 3 === 0 ? 'rgba(255, 100, 100, 0.4)' : 
+                                 i % 3 === 1 ? 'rgba(100, 150, 255, 0.4)' : 
+                                 'rgba(255, 255, 255, 0.5)',
+                      boxShadow: `0 0 ${size * 2}px currentColor`,
+                      animation: `starTwinkle ${2 + Math.random() * 3}s infinite ease-in-out alternate`,
+                      animationDelay: `${Math.random() * 2}s`,
+                    }}
+                  />
+                )
+              })}
+            </div>
+            
+            {/* Dust lanes - dark regions */}
+            <div 
+              className="absolute inset-0 opacity-30"
+              style={{
+                background: `conic-gradient(from 45deg at center,
+                  transparent 0deg,
+                  rgba(0, 0, 0, 0.15) 25deg,
+                  transparent 35deg,
+                  transparent 135deg,
+                  rgba(0, 0, 0, 0.1) 160deg,
+                  transparent 170deg,
+                  transparent 225deg,
+                  rgba(0, 0, 0, 0.12) 250deg,
+                  transparent 260deg,
+                  transparent 315deg,
+                  rgba(0, 0, 0, 0.08) 340deg,
+                  transparent 350deg)`,
+                borderRadius: '50%',
+                maskImage: 'radial-gradient(ellipse 80% 80% at center, black 25%, transparent 65%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at center, black 25%, transparent 65%)',
+              }}
+            />
+            
+            {/* Galactic halo - very faint outer glow */}
+            <div 
+              className="absolute inset-0 rounded-full opacity-5"
+              style={{
+                background: 'radial-gradient(circle, transparent 50%, rgba(6, 182, 212, 0.1) 70%, rgba(147, 51, 234, 0.05) 85%, transparent 100%)',
+                transform: 'scale(1.4)',
+              }}
+            />
+          </div>
+        ))}
       </div>
     )
-  }
+  }, []) // Empty dependency array - only calculate once
 
   return (
     <div
@@ -293,99 +633,142 @@ export default function Portfolio() {
             {!isPrefersReducedMotion && <SimpleGrid cols={8} rows={8} />}
           </div>
 
-          {/* Optimized floating particles */}
-          {!isPrefersReducedMotion && <OptimizedParticles />}
+          {/* Starfield particles - like outer space */}
+          {!isPrefersReducedMotion && StarfieldParticles}
 
           <motion.div className="container mx-auto px-4 z-10" style={{ opacity, scale }}>
-            <div className="max-w-3xl mx-auto text-left md:ml-12 lg:ml-24">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
-                  Whelmyran Bima Adhienirma
-                </h1>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <h2 className="text-xl md:text-2xl text-gray-300 mb-8">Novice Developer</h2>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="mb-12 text-gray-400 max-w-xl"
-              >
-                <p>
-                Hello, my name is Whelmyran Bima Adhienirma, I was born in Dumai on June 1, 2006, and now I am studying at Batam State Polytechnic, I like coding, watching, reading novels, and you.
-                </p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 0.6 }}
-                className="flex space-x-4 mb-12"
-              >
-                <Link href="https://instagram.com/bimaadinirma" target="_blank" rel="noopener noreferrer">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
-                    onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
-                    className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
-                  >
-                    <Instagram className="h-5 w-5" />
-                    <span className="sr-only">Instagram</span>
-                  </Button>
-                </Link>
-                <Link href="https://github.com/Bimaadhinirma" target="_blank" rel="noopener noreferrer">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
-                    onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
-                    className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
-                  >
-                    <Github className="h-5 w-5" />
-                    <span className="sr-only">GitHub</span>
-                  </Button>
-                </Link>
-                <Link href="https://www.linkedin.com/in/whelmyran-bima-adhinirma-502733294/" target="_blank" rel="noopener noreferrer">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
-                    onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
-                    className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
-                  >
-                    <Linkedin className="h-5 w-5" />
-                    <span className="sr-only">LinkedIn</span>
-                  </Button>
-                </Link>
-                <Link href="mailto:bimaadhinirma@gmail.com">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
-                    onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
-                    className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
-                  >
-                    <Mail className="h-5 w-5" />
-                    <span className="sr-only">Email</span>
-                  </Button>
-                </Link>
-              </motion.div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.8 }}>
-                <Button
-                  onClick={() => scrollToSection(educationRef)}
-                  onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
-                  onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
-                  className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 relative overflow-hidden group"
+            <div className="max-w-6xl mx-auto">
+              {/* Profile Photo - Mobile First (Top) */}
+              <div className="md:hidden flex justify-center mb-8">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  transition={{ duration: 0.8, delay: 0.1 }}
+                  className="flex-shrink-0"
                 >
-                  <span className="relative z-10">Explore My Work</span>
-                  <ArrowDown className="relative z-10 ml-2 h-4 w-4" />
-                </Button>
-              </motion.div>
+                  <div className="relative">
+                    <img
+                      src="/bima.png"
+                      alt="Whelmyran Bima Adhienirma"
+                      className="w-48 h-48 rounded-full border-4 border-cyan-400 shadow-lg object-cover bg-gray-800"
+                      style={{ boxShadow: '0 8px 32px 0 rgba(6,182,212,0.3)' }}
+                    />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/20 to-purple-500/20 animate-pulse"></div>
+                  </div>
+                </motion.div>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+                {/* Content Section */}
+                <div className="flex-1 text-center md:text-left md:ml-12 lg:ml-24">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+                    <h1 className="text-4xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                      Whelmyran Bima Adhienirma
+                    </h1>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                  >
+                    <h2 className="text-xl md:text-2xl text-gray-300 mb-8">Novice Developer</h2>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="mb-12 text-gray-400 max-w-xl"
+                  >
+                    <p>
+                    Hello, my name is Whelmyran Bima Adhienirma, I was born in Dumai on June 1, 2006, and now I am studying at Batam State Polytechnic, I like coding, watching, reading novels, and you.
+                    </p>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.6 }}
+                    className="flex space-x-4 mb-12"
+                  >
+                    <Link href="https://instagram.com/bimaadinirma" target="_blank" rel="noopener noreferrer">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+                        onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+                        className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
+                      >
+                        <Instagram className="h-5 w-5" />
+                        <span className="sr-only">Instagram</span>
+                      </Button>
+                    </Link>
+                    <Link href="https://github.com/Bimaadhinirma" target="_blank" rel="noopener noreferrer">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+                        onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+                        className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
+                      >
+                        <Github className="h-5 w-5" />
+                        <span className="sr-only">GitHub</span>
+                      </Button>
+                    </Link>
+                    <Link href="https://www.linkedin.com/in/whelmyran-bima-adhinirma-502733294/" target="_blank" rel="noopener noreferrer">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+                        onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+                        className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
+                      >
+                        <Linkedin className="h-5 w-5" />
+                        <span className="sr-only">LinkedIn</span>
+                      </Button>
+                    </Link>
+                    <Link href="mailto:bimaadhinirma@gmail.com">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+                        onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+                        className="rounded-full border-gray-700 hover:border-cyan-400 hover:bg-cyan-400/10"
+                      >
+                        <Mail className="h-5 w-5" />
+                        <span className="sr-only">Email</span>
+                      </Button>
+                    </Link>
+                  </motion.div>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.8 }}>
+                    <Button
+                      onClick={() => scrollToSection(educationRef)}
+                      onMouseEnter={!isPrefersReducedMotion ? enterButton : undefined}
+                      onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
+                      className="rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 relative overflow-hidden group"
+                    >
+                      <span className="relative z-10">Explore My Work</span>
+                      <ArrowDown className="relative z-10 ml-2 h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </div>
+
+                {/* Profile Photo - Desktop Only (Right Side) */}
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  transition={{ duration: 0.8, delay: 0.1 }}
+                  className="hidden md:block flex-shrink-0"
+                >
+                  <div className="relative">
+                    <img
+                      src="/bima.png"
+                      alt="Whelmyran Bima Adhienirma"
+                      className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 rounded-full border-4 border-cyan-400 shadow-lg object-cover bg-gray-800"
+                      style={{ boxShadow: '0 8px 32px 0 rgba(6,182,212,0.3)' }}
+                    />
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/20 to-purple-500/20 animate-pulse"></div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         </section>
@@ -485,19 +868,19 @@ export default function Portfolio() {
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2 sm:px-0">
-              {[
+                {[
                 {
                   title: "Smart Glasses Technology as a Visual Aid for the Blind in Recognizing Objects Based on Artificial Intelligence and Voice Instructions.",
                   description:
-                    "Created Smart Glasses for Blind People to Scanning Money and Voice Output Based on Artificial Intelligence used HuskeyLens and Arduino Nano.",
+                  "Created Smart Glasses for the visually impaired to scan money and provide voice output based on Artificial Intelligence using HuskeyLens and Arduino Nano.",
                   tags: ["AI", "HuskyLens", "Arduino"],
                   link: "https://cdn.discordapp.com/attachments/970587419080540210/1267524110309654538/Laporan_Penelitian_Tunanetra.pdf?ex=67f6a4d1&is=67f55351&hm=6a597578b4fb6cb0f83b385e03cff6ec6135e506214ff58c57d01bc32dc57004&",
                   status: "Done",
                 },
                 {
-                  title: "Attendance System Based SMS Gateway.",
+                  title: "Attendance System Based on SMS Gateway.",
                   description:
-                    "Attendance System for School using RFID/Fingerprint and Send SMS to Parent for Notification.",
+                  "A school attendance system using RFID/Fingerprint that sends SMS notifications to parents.",
                   tags: ["SMS", "Arduino", "Student", "Attendance"],
                   link: "#",
                   status: "Done",
@@ -505,20 +888,28 @@ export default function Portfolio() {
                 {
                   title: "Virtual Event Check-in.",
                   description:
-                    "Attendance System for Virtual Event, helping Event Organizer for recapitulation an participants who attended the event, and Automatic generate Sertificate for participant.",
-                  tags: ["PHP", "HTML", "CSS", "JavaScript", "MySQL", "Fpdf",],
+                  "Attendance system for virtual events, helping event organizers recap participants who attended and automatically generate certificates for participants.",
+                  tags: ["PHP", "HTML", "CSS", "JavaScript", "MySQL", "Fpdf"],
                   link: "https://pbl.polibatam.ac.id/pamerin/detail.php?title=aplikasi-absensi-peserta-acara-online&id=MjU1NQ==&ta=NQ==&id_tim=Mjg1Mg==",
                   status: "Done",
                 },
                 {
-                  title: "Tracer Study Polibatam",
+                  title: "Polibatam Tracer Study",
                   description:
-                    "RPolibatam Tracer Study System is a web-based application used to track the career development of alumni of Batam State Polytechnic (Polibatam) after graduation. This system functions as an evaluation tool to assess the relationship between the curriculum taught and the needs of the world of work.",
-                  tags: ["Laravel", "Tailwind", "MySQL"],
-                  link: "#",
+                  "Polibatam Tracer Study System is a web-based application used to track the career development of Batam State Polytechnic (Polibatam) alumni after graduation. This system serves as an evaluation tool to assess the relationship between the curriculum taught and the needs of the workforce.",
+                  tags: ["Laravel", "Tailwind", "JavaScript", "MySQL"],
+                  link: "https://pbl.polibatam.ac.id/pamerin/detail.php?title=pengembangan-web-tracer-study-polibatam&id=MzEyNw==&ta=Ng==&id_tim=MzkxNA==",
+                  status: "Done",
+                },
+                {
+                  title: "Berdikari Talent Cerdas",
+                  description:
+                  "TalentCerdas.id is a modern job search platform using AI to match talents with suitable jobs and help companies find the best candidates. It features job fair tools like attendance check-in and job listings tailored for events.",
+                  tags: ["AI", "Job Matching", "Jobfair", "Talent", "Recruitment"],
+                  link: "https://talentcerdas.id",
                   status: "In Progress",
                 },
-              ].map((project, index) => (
+                ].map((project, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -529,41 +920,41 @@ export default function Portfolio() {
                   onMouseLeave={!isPrefersReducedMotion ? leaveButton : undefined}
                 >
                   <Card className="bg-black/40 border-gray-800 hover:border-cyan-400/50 transition-all duration-300 h-full overflow-hidden group relative">
-                    <div className="absolute top-2 right-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          project.status === "Done" ? "bg-transparent text-green-800" : 
-                          project.status === "In Progress" ? "bg-transparent text-yellow-800" :
-                          "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {project.status}
-                      </span>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="text-xl text-white group-hover:text-cyan-400 transition-colors">
-                        {project.title}
-                      </CardTitle>
-                      <CardDescription className="text-gray-400">{project.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {project.tags.map((tag, tagIndex) => (
-                          <span
-                            key={tagIndex}
-                            className="px-2 py-1 bg-gray-800 text-gray-300 text-xs rounded-full group-hover:bg-cyan-900/30 transition-colors"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <Link href={project.link} className="text-cyan-400 text-sm flex items-center hover:underline">
-                        View Project <ExternalLink className="ml-1 h-3 w-3" />
-                      </Link>
-                    </CardContent>
+                  <div className="absolute top-2 right-2">
+                  <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    project.status === "Done" ? "bg-transparent text-green-800" : 
+                    project.status === "In Progress" ? "bg-transparent text-yellow-800" :
+                    "bg-gray-100 text-gray-800"
+                  }`}
+                  >
+                  {project.status}
+                  </span>
+                  </div>
+                  <CardHeader>
+                  <CardTitle className="text-xl text-white group-hover:text-cyan-400 transition-colors">
+                  {project.title}
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">{project.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                  {project.tags.map((tag, tagIndex) => (
+                    <span
+                    key={tagIndex}
+                    className="px-2 py-1 bg-gray-800 text-gray-300 text-xs rounded-full group-hover:bg-cyan-900/30 transition-colors"
+                    >
+                    {tag}
+                    </span>
+                  ))}
+                  </div>
+                  <Link href={project.link} className="text-cyan-400 text-sm flex items-center hover:underline">
+                  View Project <ExternalLink className="ml-1 h-3 w-3" />
+                  </Link>
+                  </CardContent>
                   </Card>
                 </motion.div>
-              ))}
+                ))}
             </div>
           </div>
         </section>
@@ -666,9 +1057,11 @@ export default function Portfolio() {
                 viewport={{ once: true }}
               >
                 <h3 className="text-xl font-bold mb-4 text-center">Tools & Frameworks</h3>
-                <div className="grid grid-cols-4 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
                   {[
                     { name: "Git", icon: <GitBranch className="h-8 w-8 text-cyan-400" /> },
+                    { name: "Laravel", icon: <Code className="h-8 w-8 text-cyan-400" /> },
+                    { name: "TailwindCss", icon: <Code className="h-8 w-8 text-cyan-400" /> },
                     { name: "Next.js", icon: <Code className="h-8 w-8 text-cyan-400" /> },
                     { name: "Figma", icon: <PenTool className="h-8 w-8 text-cyan-400" /> },
                     { name: "Fpdf", icon: <FileText className="h-8 w-8 text-cyan-400" /> },
@@ -777,7 +1170,114 @@ export default function Portfolio() {
             transform: translate(0, 0);
           }
         }
+
+        @keyframes starTwinkle {
+          0% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes constellationPulse {
+          0%, 100% {
+            opacity: 0.1;
+          }
+          50% {
+            opacity: 0.3;
+          }
+        }
+
+        @keyframes shootingStar {
+          0% {
+            transform: translateX(calc(100vw + 100px)) translateY(0) rotate(0deg);
+            opacity: 0;
+          }
+          5% {
+            opacity: 1;
+          }
+          95% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(-200px) translateY(0) rotate(0deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes nebulaDrift {
+          0% {
+            transform: translateX(0) translateY(0) scale(1);
+          }
+          50% {
+            transform: translateX(20px) translateY(-10px) scale(1.1);
+          }
+          100% {
+            transform: translateX(0) translateY(0) scale(1);
+          }
+        }
+
+        @keyframes galaxyRotate {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(360deg);
+          }
+        }
         
+        @keyframes enhancedFloat {
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          20% {
+            transform: translate(40px, -30px) scale(1.1);
+          }
+          40% {
+            transform: translate(-20px, -60px) scale(0.9);
+          }
+          60% {
+            transform: translate(60px, -40px) scale(1.05);
+          }
+          80% {
+            transform: translate(-30px, 20px) scale(0.95);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+        }
+
+        @keyframes rotate {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.1);
+          }
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+        }
+
         @keyframes optimizedFloat {
           0% {
             transform: translate(0, 0);
